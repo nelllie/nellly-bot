@@ -1,78 +1,106 @@
-from flask import Flask
+import os
+import logging
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-app = Flask(__name__)
+# Настройки
+BOT_TOKEN = "8081060276:AAER7c-zg47MsVVGJM-ZqnNl_CIUQ3_JN88"
+CHANNEL_ID = "-1003016125655"
 
-@app.route('/')
-def home():
-    return "Бот работает! Используйте /webapp для проверки доступа"
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
 
-@app.route('/webapp')
-def webapp():
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Проверка подписки</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-            body { 
-                font-family: Arial, sans-serif; 
-                padding: 20px; 
-                text-align: center;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                min-height: 100vh;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                margin: 0;
-            }
-            .container { 
-                background: rgba(255,255,255,0.1); 
-                padding: 40px; 
-                border-radius: 15px; 
-                backdrop-filter: blur(10px);
-                max-width: 90%;
-                margin: 0 auto;
-            }
-            .button { 
-                background: #ff6b6b; 
-                color: white; 
-                padding: 15px 30px; 
-                text-decoration: none; 
-                border-radius: 25px; 
-                display: inline-block; 
-                margin: 15px 0;
-                font-weight: bold;
-                border: none;
-                cursor: pointer;
-            }
-            .emoji { 
-                font-size: 48px; 
-                margin: 20px 0;
-                cursor: pointer;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h2>🔐 Проверка доступа к гайду</h2>
-            <p>Эта функция скоро будет доступна</p>
-            <div class="emoji">📚</div>
-            <p>Нажмите на кнопку для проверки подписки:</p>
-            <button class="button" onclick="checkSubscription()">Проверить подписку</button>
-        </div>
+async def check_subscription(user_id, bot):
+    """Проверка подписки на канал"""
+    try:
+        chat_member = await bot.get_chat_member(CHANNEL_ID, user_id)
+        return chat_member.status in ['member', 'administrator', 'creator']
+    except Exception as e:
+        logging.error(f"Ошибка проверки подписки: {e}")
+        return False
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /start"""
+    user = update.effective_user
+    
+    # Проверяем подписку
+    is_subscribed = await check_subscription(user.id, context.bot)
+    
+    if is_subscribed:
+        # Подписан - выдаем гайд
+        keyboard = [
+            [InlineKeyboardButton("📚 Получить гайд", callback_data="get_guide")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
-        <script>
-            function checkSubscription() {
-                alert('Функция проверки подписки скоро будет добавлена!');
-            }
-        </script>
-    </body>
-    </html>
-    """
+        await update.message.reply_text(
+            f"✅ Привет, {user.first_name}! Вы подписаны на канал!\n\n"
+            "Нажмите кнопку ниже чтобы получить гайд:",
+            reply_markup=reply_markup
+        )
+    else:
+        # Не подписан - просим подписаться
+        keyboard = [
+            [InlineKeyboardButton("📢 Подписаться на канал", url="https://t.me/nellly_psy")],
+            [InlineKeyboardButton("🔍 Проверить подписку", callback_data="check_subscription")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.message.reply_text(
+            "📚 Чтобы получить гайд, нужно подписаться на наш канал!\n\n"
+            "После подписки нажмите 'Проверить подписку':",
+            reply_markup=reply_markup
+        )
 
-if __name__ == '__main__':
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик нажатий на кнопки"""
+    query = update.callback_query
+    await query.answer()
+    
+    user_id = query.from_user.id
+    
+    if query.data == "check_subscription":
+        is_subscribed = await check_subscription(user_id, context.bot)
+        
+        if is_subscribed:
+            keyboard = [[InlineKeyboardButton("📚 Получить гайд", callback_data="get_guide")]]
+            await query.edit_message_text(
+                "✅ Отлично! Теперь вы подписаны!\n\nНажмите чтобы получить гайд:",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+        else:
+            keyboard = [
+                [InlineKeyboardButton("📢 Подписаться", url="https://t.me/nellly_psy")],
+                [InlineKeyboardButton("🔍 Проверить снова", callback_data="check_subscription")]
+            ]
+            await query.edit_message_text(
+                "❌ Вы еще не подписались на канал!\n\nПожалуйста, подпишитесь и проверьте снова:",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+    
+    elif query.data == "get_guide":
+        is_subscribed = await check_subscription(user_id, context.bot)
+        
+        if is_subscribed:
+            # Выдаем гайд
+            await query.edit_message_text(
+                "🎉 Вот ваш гайд!\n\n"
+                "Ссылка: https://drive.google.com/ваша-ссылка-на-гайд\n\n"
+                "Приятного изучения! 📖"
+            )
+        else:
+            await query.edit_message_text("❌ Доступ закрыт. Подпишитесь на канал.")
+
+def main():
+    """Запуск бота"""
+    application = Application.builder().token(BOT_TOKEN).build()
+    
+    # Добавляем обработчики
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(button_handler))
+    
+    # Запускаем бота
+    application.run_polling()
+
+if __name__ == "__main__":
+    main()
