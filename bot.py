@@ -5,8 +5,8 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # Настройки
-BOT_TOKEN = "8081060276:AAER7c-zg47MsVVGJM-ZqnNl_CIUQ3_JN88"  # Замените на токен бота
-CHANNEL_ID = "-1003016125655"  # Замените на ID канала (например -1001234567890)
+BOT_TOKEN = "8081060276:AAER7c-zg47MsVVGJM-ZqnNl_CIUQ3_JN88"
+CHANNEL_ID = "-1003016125655"
 
 # Ваши гайды
 GUIDES = {
@@ -51,16 +51,51 @@ def webapp(guide_name):
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-            body {{ font-family: Arial, sans-serif; padding: 20px; text-align: center; }}
-            .button {{ background: #2481cc; color: white; padding: 15px 30px; 
-                     text-decoration: none; border-radius: 10px; display: inline-block; margin: 10px; }}
+            body {{ 
+                font-family: Arial, sans-serif; 
+                padding: 20px; 
+                text-align: center; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }}
+            .container {{
+                background: rgba(255,255,255,0.1);
+                padding: 30px;
+                border-radius: 15px;
+                backdrop-filter: blur(10px);
+                max-width: 500px;
+            }}
+            .button {{ 
+                background: #ff6b6b; 
+                color: white; 
+                padding: 15px 30px; 
+                text-decoration: none; 
+                border-radius: 25px; 
+                display: inline-block; 
+                margin: 20px 0;
+                font-size: 18px;
+                font-weight: bold;
+                transition: transform 0.3s;
+            }}
+            .button:hover {{
+                transform: scale(1.05);
+            }}
+            h2 {{ margin-bottom: 10px; }}
+            p {{ font-size: 16px; line-height: 1.5; }}
         </style>
     </head>
     <body>
-        <h2>{guide['title']}</h2>
-        <p>{guide['description']}</p>
-        <a href="{guide['url']}" class="button" target="_blank">📖 Открыть гайд</a>
-        <p><small>Закройте это окно чтобы вернуться в Telegram</small></p>
+        <div class="container">
+            <h2>{guide['title']}</h2>
+            <p>{guide['description']}</p>
+            <a href="{guide['url']}" class="button" target="_blank">📖 Открыть гайд</a>
+            <p><small>Закройте это окно чтобы вернуться в Telegram</small></p>
+        </div>
     </body>
     </html>
     """
@@ -70,10 +105,10 @@ def webapp(guide_name):
 def home():
     return "Бот работает!"
 
-@app.route('/set_webhook', methods=['GET'])
-def set_webhook():
-    """Установка webhook (вызовете этот URL один раз)"""
-    return "Webhook будет установлен позже"
+@app.route('/health')
+def health():
+    return jsonify({"status": "ok", "message": "Bot is running"})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
