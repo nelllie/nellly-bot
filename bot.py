@@ -5,7 +5,7 @@ from aiogram.utils import executor
 
 # Настройки
 BOT_TOKEN = "8081060276:AAER7c-zg47MsVVGJM-ZqnNl_CIUQ3_JN88"
-CHANNEL_ID = "@nellly_psy"  # Ваш канал
+CHANNEL_ID = "-1003016125655"  # Ваш канал
 
 # Ваши гайды
 GUIDES = {
@@ -121,3 +121,4 @@ async def check_subscription(user_id):
 
 if __name__ == "__main__":
     executor.start_polling(dispatcher=dp, skip_updates=True)
+
