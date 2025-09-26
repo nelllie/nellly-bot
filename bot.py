@@ -120,5 +120,11 @@ async def check_subscription(user_id):
         return False
 
 if __name__ == "__main__":
+    # Явно указываем использовать polling
+    from aiogram import executor
+    executor.start_polling(dp, skip_updates=True)
+
+if __name__ == "__main__":
     executor.start_polling(dispatcher=dp, skip_updates=True)
+
 
